@@ -2,39 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Project Gutenberg Book Reader Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Classic Library Palette */
+    --background: 45 20% 97%;
+    --foreground: 25 25% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 45 30% 95%;
+    --card-foreground: 25 25% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 45 30% 95%;
+    --popover-foreground: 25 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Rich Brown Primary */
+    --primary: 25 45% 25%;
+    --primary-foreground: 45 30% 95%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm Secondary */
+    --secondary: 40 20% 88%;
+    --secondary-foreground: 25 45% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted Tones */
+    --muted: 40 15% 90%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Gold Accent */
+    --accent: 45 85% 65%;
+    --accent-foreground: 25 45% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 45 30% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 40 15% 85%;
+    --input: 40 15% 92%;
+    --ring: 45 85% 65%;
+
+    /* Book Reading Specific */
+    --book-page: 45 25% 96%;
+    --book-text: 25 30% 20%;
+    --book-accent: 45 85% 65%;
+    
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)), hsl(25 35% 35%));
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(40 25% 92%));
+    --gradient-accent: linear-gradient(90deg, hsl(var(--accent)), hsl(50 80% 70%));
 
     --radius: 0.5rem;
 
@@ -100,6 +113,26 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .prose {
+    max-width: none;
+  }
+
+  .prose pre {
+    font-family: Georgia, 'Times New Roman', serif;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.7;
+    color: hsl(var(--book-text));
+  }
+}
 }
