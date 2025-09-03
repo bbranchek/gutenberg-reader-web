@@ -71,8 +71,10 @@ export class GutenbergService {
   
   static async getBookText(url: string): Promise<string> {
     try {
-      // Add CORS proxy for better compatibility
-      const proxyUrl = url.startsWith('https://') ? url : `https://www.gutenberg.org/files/${url}`;
+      // Use a CORS proxy to fetch the content
+      const corsProxy = 'https://api.allorigins.win/raw?url=';
+      const targetUrl = encodeURIComponent(url);
+      const proxyUrl = corsProxy + targetUrl;
       
       const response = await fetch(proxyUrl, {
         method: 'GET',
@@ -87,15 +89,51 @@ export class GutenbergService {
       
       const text = await response.text();
       
-      // Clean up the text content
-      return text
+      // Clean up the text content and remove Project Gutenberg header/footer
+      let cleanText = text
         .replace(/\r\n/g, '\n')
         .replace(/\r/g, '\n')
         .trim();
+      
+      // Remove common Project Gutenberg headers and footers
+      const startMarkers = [
+        '*** START OF THE PROJECT GUTENBERG EBOOK',
+        '*** START OF THIS PROJECT GUTENBERG EBOOK',
+        'START OF THE PROJECT GUTENBERG EBOOK'
+      ];
+      
+      const endMarkers = [
+        '*** END OF THE PROJECT GUTENBERG EBOOK',
+        '*** END OF THIS PROJECT GUTENBERG EBOOK',
+        'END OF THE PROJECT GUTENBERG EBOOK'
+      ];
+      
+      // Find and remove header
+      for (const marker of startMarkers) {
+        const startIndex = cleanText.indexOf(marker);
+        if (startIndex !== -1) {
+          const endOfLine = cleanText.indexOf('\n', startIndex);
+          if (endOfLine !== -1) {
+            cleanText = cleanText.substring(endOfLine + 1);
+            break;
+          }
+        }
+      }
+      
+      // Find and remove footer
+      for (const marker of endMarkers) {
+        const endIndex = cleanText.lastIndexOf(marker);
+        if (endIndex !== -1) {
+          cleanText = cleanText.substring(0, endIndex);
+          break;
+        }
+      }
+      
+      return cleanText.trim();
         
     } catch (error) {
       console.error('Error fetching book text:', error);
-      throw new Error('Unable to load book content. The book may not be available in text format.');
+      throw new Error("Unable to load book content. Please try a different book.");
     }
   }
 }
