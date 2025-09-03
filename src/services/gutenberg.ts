@@ -40,14 +40,23 @@ export class GutenbergService {
       
       const data: GutenbergResponse = await response.json();
       
-      return data.results.map(book => ({
-        id: book.id,
-        title: book.title,
-        author: book.authors.length > 0 ? book.authors[0].name : 'Unknown Author',
-        downloadCount: book.download_count,
-        textUrl: book.formats['text/plain'] || book.formats['text/plain; charset=utf-8'],
-        htmlUrl: book.formats['text/html']
-      }));
+      return data.results.map(book => {
+        // Look for various text formats in order of preference
+        const textUrl = book.formats['text/plain'] || 
+                       book.formats['text/plain; charset=utf-8'] || 
+                       book.formats['text/plain; charset=us-ascii'] ||
+                       book.formats['application/plain'] ||
+                       book.formats['text/html'];
+        
+        return {
+          id: book.id,
+          title: book.title,
+          author: book.authors.length > 0 ? book.authors[0].name : 'Unknown Author',
+          downloadCount: book.download_count,
+          textUrl: textUrl,
+          htmlUrl: book.formats['text/html']
+        };
+      }).filter(book => book.textUrl); // Only return books that have readable text
     } catch (error) {
       console.error('Error searching books:', error);
       throw error;

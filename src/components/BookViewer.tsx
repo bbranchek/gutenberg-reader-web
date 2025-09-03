@@ -22,7 +22,7 @@ export const BookViewer = ({ book, onBack }: BookViewerProps) => {
       setIsLoading(true);
       try {
         if (!book.textUrl) {
-          throw new Error('No text version available for this book');
+          throw new Error('This book is not available in a readable text format');
         }
         
         const text = await GutenbergService.getBookText(book.textUrl);
