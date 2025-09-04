@@ -31,7 +31,7 @@ export class GutenbergService {
   static async searchBooks(query: string, limit: number = 10): Promise<Book[]> {
     try {
       const response = await fetch(
-        `${this.BASE_URL}?search=${encodeURIComponent(query)}&page_size=${limit}`
+        `${this.BASE_URL}?search=${encodeURIComponent(query)}&page_size=50`
       );
       
       if (!response.ok) {
@@ -40,29 +40,67 @@ export class GutenbergService {
       
       const data: GutenbergResponse = await response.json();
       
-      // Remove duplicates and filter for readable books
-      const uniqueBooks = new Map();
+      // Filter and rank books by title relevance
+      const queryLower = query.toLowerCase();
+      const rankedBooks: { book: Book; score: number }[] = [];
+      const seenTitles = new Set<string>();
       
       data.results.forEach(book => {
         // Look for various text formats in order of preference
-        const textUrl = book.formats['text/plain'] || 
-                       book.formats['text/plain; charset=utf-8'] || 
+        const textUrl = book.formats['text/plain; charset=utf-8'] || 
                        book.formats['text/plain; charset=us-ascii'] ||
+                       book.formats['text/plain'] ||
                        book.formats['application/plain'];
         
-        if (textUrl && !uniqueBooks.has(book.title.toLowerCase())) {
-          uniqueBooks.set(book.title.toLowerCase(), {
-            id: book.id,
-            title: book.title,
-            author: book.authors.length > 0 ? book.authors[0].name : 'Unknown Author',
-            downloadCount: book.download_count,
-            textUrl: textUrl,
-            htmlUrl: book.formats['text/html']
-          });
+        if (textUrl && !seenTitles.has(book.title.toLowerCase())) {
+          seenTitles.add(book.title.toLowerCase());
+          
+          const titleLower = book.title.toLowerCase();
+          let score = 0;
+          
+          // Exact match gets highest score
+          if (titleLower === queryLower) {
+            score = 100;
+          }
+          // Title starts with query gets high score
+          else if (titleLower.startsWith(queryLower)) {
+            score = 80;
+          }
+          // Title contains exact query gets medium score
+          else if (titleLower.includes(queryLower)) {
+            score = 60;
+          }
+          // Word-by-word matching gets lower score
+          else {
+            const queryWords = queryLower.split(' ');
+            const titleWords = titleLower.split(' ');
+            const matchingWords = queryWords.filter(word => 
+              titleWords.some(titleWord => titleWord.includes(word))
+            ).length;
+            score = (matchingWords / queryWords.length) * 40;
+          }
+          
+          if (score > 20) { // Only include books with reasonable relevance
+            rankedBooks.push({
+              book: {
+                id: book.id,
+                title: book.title,
+                author: book.authors.length > 0 ? book.authors[0].name : 'Unknown Author',
+                downloadCount: book.download_count,
+                textUrl: textUrl,
+                htmlUrl: book.formats['text/html']
+              },
+              score
+            });
+          }
         }
       });
       
-      return Array.from(uniqueBooks.values());
+      // Sort by score descending and return top results
+      return rankedBooks
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit)
+        .map(item => item.book);
     } catch (error) {
       console.error('Error searching books:', error);
       throw error;
@@ -71,69 +109,100 @@ export class GutenbergService {
   
   static async getBookText(url: string): Promise<string> {
     try {
-      // Use a CORS proxy to fetch the content
-      const corsProxy = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = encodeURIComponent(url);
-      const proxyUrl = corsProxy + targetUrl;
-      
-      const response = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'text/plain,text/html,*/*',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch book content: ${response.status} ${response.statusText}`);
-      }
-      
-      const text = await response.text();
-      
-      // Clean up the text content and remove Project Gutenberg header/footer
-      let cleanText = text
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .trim();
-      
-      // Remove common Project Gutenberg headers and footers
-      const startMarkers = [
-        '*** START OF THE PROJECT GUTENBERG EBOOK',
-        '*** START OF THIS PROJECT GUTENBERG EBOOK',
-        'START OF THE PROJECT GUTENBERG EBOOK'
+      // Try multiple CORS proxies in order of preference
+      const corsProxies = [
+        'https://corsproxy.io/?',
+        'https://cors-anywhere.herokuapp.com/',
+        'https://api.codetabs.com/v1/proxy?quest='
       ];
       
-      const endMarkers = [
-        '*** END OF THE PROJECT GUTENBERG EBOOK',
-        '*** END OF THIS PROJECT GUTENBERG EBOOK',
-        'END OF THE PROJECT GUTENBERG EBOOK'
-      ];
+      let lastError: Error | null = null;
       
-      // Find and remove header
-      for (const marker of startMarkers) {
-        const startIndex = cleanText.indexOf(marker);
-        if (startIndex !== -1) {
-          const endOfLine = cleanText.indexOf('\n', startIndex);
-          if (endOfLine !== -1) {
-            cleanText = cleanText.substring(endOfLine + 1);
-            break;
+      for (const proxy of corsProxies) {
+        try {
+          const targetUrl = encodeURIComponent(url);
+          const proxyUrl = proxy + targetUrl;
+          
+          const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'text/plain,text/html,*/*',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
+          
+          const text = await response.text();
+          
+          // Validate that we got actual book content, not an error page
+          if (text.length < 100 || text.includes('Access denied') || text.includes('Error')) {
+            throw new Error('Invalid content received');
+          }
+          
+          // Clean up the text content and remove Project Gutenberg header/footer
+          let cleanText = text
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            .trim();
+          
+          // Remove common Project Gutenberg headers and footers
+          const startMarkers = [
+            '*** START OF THE PROJECT GUTENBERG EBOOK',
+            '*** START OF THIS PROJECT GUTENBERG EBOOK',
+            'START OF THE PROJECT GUTENBERG EBOOK'
+          ];
+          
+          const endMarkers = [
+            '*** END OF THE PROJECT GUTENBERG EBOOK',
+            '*** END OF THIS PROJECT GUTENBERG EBOOK',
+            'END OF THE PROJECT GUTENBERG EBOOK'
+          ];
+          
+          // Find and remove header
+          for (const marker of startMarkers) {
+            const startIndex = cleanText.indexOf(marker);
+            if (startIndex !== -1) {
+              const endOfLine = cleanText.indexOf('\n', startIndex);
+              if (endOfLine !== -1) {
+                cleanText = cleanText.substring(endOfLine + 1);
+                break;
+              }
+            }
+          }
+          
+          // Find and remove footer
+          for (const marker of endMarkers) {
+            const endIndex = cleanText.lastIndexOf(marker);
+            if (endIndex !== -1) {
+              cleanText = cleanText.substring(0, endIndex);
+              break;
+            }
+          }
+          
+          const finalText = cleanText.trim();
+          
+          // Final validation - ensure we have substantial content
+          if (finalText.length < 50) {
+            throw new Error('Book content too short');
+          }
+          
+          return finalText;
+          
+        } catch (error) {
+          lastError = error as Error;
+          console.warn(`Proxy ${proxy} failed:`, error);
+          continue; // Try next proxy
         }
       }
       
-      // Find and remove footer
-      for (const marker of endMarkers) {
-        const endIndex = cleanText.lastIndexOf(marker);
-        if (endIndex !== -1) {
-          cleanText = cleanText.substring(0, endIndex);
-          break;
-        }
-      }
-      
-      return cleanText.trim();
+      // If all proxies failed, throw the last error
+      throw lastError || new Error('All CORS proxies failed');
         
     } catch (error) {
       console.error('Error fetching book text:', error);
-      throw new Error("Unable to load book content. Please try a different book.");
+      throw new Error("Unable to load book content. This book may not be available in readable format.");
     }
   }
 }
