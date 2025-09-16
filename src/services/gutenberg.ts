@@ -28,10 +28,11 @@ export interface Book {
 export class GutenbergService {
   private static readonly BASE_URL = 'https://gutendex.com/books';
   
-  static async searchBooks(query: string, limit: number = 10): Promise<Book[]> {
+  static async searchBooks(query: string, limit: number = 10, searchByAuthor: boolean = false): Promise<Book[]> {
     try {
+      const searchParam = searchByAuthor ? `author=${encodeURIComponent(query)}` : `search=${encodeURIComponent(query)}`;
       const response = await fetch(
-        `${this.BASE_URL}?search=${encodeURIComponent(query)}&page_size=50`
+        `${this.BASE_URL}?${searchParam}&page_size=50`
       );
       
       if (!response.ok) {
@@ -40,7 +41,7 @@ export class GutenbergService {
       
       const data: GutenbergResponse = await response.json();
       
-      // Filter and rank books by title relevance
+      // Filter and rank books
       const queryLower = query.toLowerCase();
       const rankedBooks: { book: Book; score: number }[] = [];
       const seenTitles = new Set<string>();
@@ -55,32 +56,54 @@ export class GutenbergService {
         if (textUrl && !seenTitles.has(book.title.toLowerCase())) {
           seenTitles.add(book.title.toLowerCase());
           
-          const titleLower = book.title.toLowerCase();
           let score = 0;
           
-          // Exact match gets highest score
-          if (titleLower === queryLower) {
-            score = 100;
-          }
-          // Title starts with query gets high score
-          else if (titleLower.startsWith(queryLower)) {
-            score = 80;
-          }
-          // Title contains exact query gets medium score
-          else if (titleLower.includes(queryLower)) {
-            score = 60;
-          }
-          // Word-by-word matching gets lower score
-          else {
-            const queryWords = queryLower.split(' ');
-            const titleWords = titleLower.split(' ');
-            const matchingWords = queryWords.filter(word => 
-              titleWords.some(titleWord => titleWord.includes(word))
-            ).length;
-            score = (matchingWords / queryWords.length) * 40;
+          if (searchByAuthor) {
+            // For author searches, score by author name relevance
+            const authorName = book.authors.length > 0 ? book.authors[0].name.toLowerCase() : '';
+            
+            if (authorName.includes(queryLower)) {
+              // Exact match gets highest score
+              if (authorName === queryLower) {
+                score = 100;
+              }
+              // Author name starts with query gets high score
+              else if (authorName.startsWith(queryLower)) {
+                score = 90;
+              }
+              // Author name contains query gets good score
+              else {
+                score = 70;
+              }
+            }
+          } else {
+            // For title searches, score by title relevance
+            const titleLower = book.title.toLowerCase();
+            
+            // Exact match gets highest score
+            if (titleLower === queryLower) {
+              score = 100;
+            }
+            // Title starts with query gets high score
+            else if (titleLower.startsWith(queryLower)) {
+              score = 80;
+            }
+            // Title contains exact query gets medium score
+            else if (titleLower.includes(queryLower)) {
+              score = 60;
+            }
+            // Word-by-word matching gets lower score
+            else {
+              const queryWords = queryLower.split(' ');
+              const titleWords = titleLower.split(' ');
+              const matchingWords = queryWords.filter(word => 
+                titleWords.some(titleWord => titleWord.includes(word))
+              ).length;
+              score = (matchingWords / queryWords.length) * 40;
+            }
           }
           
-          if (score > 20) { // Only include books with reasonable relevance
+          if (score > 0) { // Include all matched books for author searches
             rankedBooks.push({
               book: {
                 id: book.id,
