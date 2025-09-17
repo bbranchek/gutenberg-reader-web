@@ -30,9 +30,10 @@ export class GutenbergService {
   
   static async searchBooks(query: string, limit: number = 10, searchByAuthor: boolean = false): Promise<Book[]> {
     try {
-      const searchParam = searchByAuthor ? `author=${encodeURIComponent(query)}` : `search=${encodeURIComponent(query)}`;
+      // For author searches, use the search parameter but fetch more results to filter
+      const searchQuery = encodeURIComponent(query);
       const response = await fetch(
-        `${this.BASE_URL}?${searchParam}&page_size=50`
+        `${this.BASE_URL}?search=${searchQuery}&page_size=100`
       );
       
       if (!response.ok) {
@@ -59,7 +60,7 @@ export class GutenbergService {
           let score = 0;
           
           if (searchByAuthor) {
-            // For author searches, score by author name relevance
+            // For author searches, score by author name relevance and be more restrictive
             const authorName = book.authors.length > 0 ? book.authors[0].name.toLowerCase() : '';
             
             if (authorName.includes(queryLower)) {
@@ -76,6 +77,8 @@ export class GutenbergService {
                 score = 70;
               }
             }
+            // For author searches, only include books where the author name matches
+            // Don't include books just because the title mentions the author
           } else {
             // For title searches, score by title relevance
             const titleLower = book.title.toLowerCase();
@@ -103,7 +106,13 @@ export class GutenbergService {
             }
           }
           
-          if (score > 0) { // Include all matched books for author searches
+          // For author searches, only include books where author name matches
+          // For title searches, include any book with score > 0
+          const shouldInclude = searchByAuthor ? (score > 0 && book.authors.some(author => 
+            author.name.toLowerCase().includes(queryLower)
+          )) : score > 0;
+          
+          if (shouldInclude) {
             rankedBooks.push({
               book: {
                 id: book.id,
