@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { GutenbergService, Book as BookType } from '@/services/gutenberg';
 import { BookCard } from './BookCard';
+import openBookImage from '@/assets/open-book.png';
 
 interface BookSearchProps {
   onBookSelect: (book: BookType) => void;
@@ -53,6 +54,13 @@ export const BookSearch = ({ onBookSelect }: BookSearchProps) => {
           <h1 className="text-4xl font-serif font-bold bg-gradient-hero bg-clip-text text-transparent">
             Gutenberg Reader
           </h1>
+        </div>
+        <div className="flex justify-center mb-4">
+          <img 
+            src={openBookImage} 
+            alt="Open book illustration" 
+            className="w-20 h-15 object-contain opacity-80"
+          />
         </div>
         <p className="text-muted-foreground text-lg">
           Discover and read classic literature from Project Gutenberg
