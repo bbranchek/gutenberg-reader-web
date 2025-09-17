@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          mfa_enabled: boolean | null
+          phone_number: string | null
           updated_at: string
           user_id: string
           username: string
@@ -25,6 +27,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          mfa_enabled?: boolean | null
+          phone_number?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -32,6 +36,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          mfa_enabled?: boolean | null
+          phone_number?: string | null
           updated_at?: string
           user_id?: string
           username?: string

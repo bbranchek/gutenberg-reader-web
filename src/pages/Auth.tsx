@@ -45,8 +45,9 @@ const Auth = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const username = formData.get('username') as string;
+    const phoneNumber = formData.get('phoneNumber') as string;
     
-    const { error } = await signUp(email, password, username);
+    const { error } = await signUp(email, password, username, phoneNumber || undefined);
     
     setIsLoading(false);
   };
@@ -129,6 +130,19 @@ const Auth = () => {
                       required
                       disabled={isLoading}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-phone">Phone Number (Optional)</Label>
+                    <Input
+                      id="signup-phone"
+                      name="phoneNumber"
+                      type="tel"
+                      placeholder="+1234567890 (for 2FA)"
+                      disabled={isLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Add for two-factor authentication
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
