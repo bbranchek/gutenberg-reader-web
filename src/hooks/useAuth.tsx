@@ -7,13 +7,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string, phoneNumber?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  enrollMFA: (phoneNumber: string) => Promise<{ error: any; factorId?: string }>;
-  challengeMFA: (factorId: string) => Promise<{ error: any; challengeId?: string }>;
-  verifyMFA: (factorId: string, challengeId: string, code: string) => Promise<{ error: any }>;
-  unenrollMFA: (factorId: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,7 +52,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, username: string, phoneNumber?: string) => {
+  const signUp = async (email: string, password: string, username: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -65,8 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          username,
-          phone_number: phoneNumber
+          username
         }
       }
     });
@@ -125,159 +120,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const enrollMFA = async (phoneNumber: string) => {
-    try {
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'phone',
-        phone: phoneNumber
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "MFA enrollment failed",
-          description: error.message
-        });
-        return { error };
-      }
-
-      // Update profile with phone number and MFA enabled status
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ 
-            phone_number: phoneNumber,
-            mfa_enabled: true 
-          })
-          .eq('user_id', user.id);
-      }
-
-      toast({
-        title: "MFA enrolled successfully",
-        description: "Please verify with the code sent to your phone."
-      });
-
-      return { error: null, factorId: data.id };
-    } catch (err: any) {
-      const error = { message: err.message };
-      toast({
-        variant: "destructive",
-        title: "MFA enrollment failed",
-        description: error.message
-      });
-      return { error };
-    }
-  };
-
-  const challengeMFA = async (factorId: string) => {
-    try {
-      const { data, error } = await supabase.auth.mfa.challenge({ factorId });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "MFA challenge failed",
-          description: error.message
-        });
-        return { error };
-      }
-
-      return { error: null, challengeId: data.id };
-    } catch (err: any) {
-      const error = { message: err.message };
-      toast({
-        variant: "destructive",
-        title: "MFA challenge failed",
-        description: error.message
-      });
-      return { error };
-    }
-  };
-
-  const verifyMFA = async (factorId: string, challengeId: string, code: string) => {
-    try {
-      const { error } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "MFA verification failed",
-          description: error.message
-        });
-      } else {
-        toast({
-          title: "MFA verified successfully",
-          description: "Two-factor authentication is now active."
-        });
-      }
-
-      return { error };
-    } catch (err: any) {
-      const error = { message: err.message };
-      toast({
-        variant: "destructive",
-        title: "MFA verification failed",
-        description: error.message
-      });
-      return { error };
-    }
-  };
-
-  const unenrollMFA = async (factorId: string) => {
-    try {
-      const { error } = await supabase.auth.mfa.unenroll({ factorId });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "MFA unenrollment failed",
-          description: error.message
-        });
-      } else {
-        // Update profile to disable MFA
-        if (user) {
-          await supabase
-            .from('profiles')
-            .update({ 
-              mfa_enabled: false,
-              phone_number: null 
-            })
-            .eq('user_id', user.id);
-        }
-
-        toast({
-          title: "MFA disabled",
-          description: "Two-factor authentication has been disabled."
-        });
-      }
-
-      return { error };
-    } catch (err: any) {
-      const error = { message: err.message };
-      toast({
-        variant: "destructive",
-        title: "MFA unenrollment failed",
-        description: error.message
-      });
-      return { error };
-    }
-  };
-
   const value = {
     user,
     session,
     loading,
     signUp,
     signIn,
-    signOut,
-    enrollMFA,
-    challengeMFA,
-    verifyMFA,
-    unenrollMFA
+    signOut
   };
 
   return (

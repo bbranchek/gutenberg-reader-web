@@ -5,7 +5,7 @@ import { BookViewer } from '@/components/BookViewer';
 import { Book } from '@/services/gutenberg';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 
 const Index = () => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -56,10 +56,6 @@ const Index = () => {
               <User className="h-4 w-4" />
               <span>Welcome back!</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
