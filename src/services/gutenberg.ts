@@ -60,25 +60,36 @@ export class GutenbergService {
           let score = 0;
           
           if (searchByAuthor) {
-            // For author searches, score by author name relevance and be more restrictive
+            // For author searches, score by author name relevance
             const authorName = book.authors.length > 0 ? book.authors[0].name.toLowerCase() : '';
             
-            if (authorName.includes(queryLower)) {
-              // Exact match gets highest score
-              if (authorName === queryLower) {
-                score = 100;
-              }
-              // Author name starts with query gets high score
-              else if (authorName.startsWith(queryLower)) {
-                score = 90;
-              }
-              // Author name contains query gets good score
-              else {
-                score = 70;
-              }
+            // Normalize names for better matching (handle "Dickens, Charles" vs "Charles Dickens")
+            const normalizedAuthor = authorName.replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim();
+            const normalizedQuery = queryLower.replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            // Split names into words for flexible matching
+            const authorWords = normalizedAuthor.split(' ');
+            const queryWords = normalizedQuery.split(' ');
+            
+            // Check for exact match (any order)
+            if (normalizedAuthor === normalizedQuery || authorName === queryLower) {
+              score = 100;
             }
-            // For author searches, only include books where the author name matches
-            // Don't include books just because the title mentions the author
+            // Check if all query words are present in author name
+            else if (queryWords.every(word => authorWords.some(authorWord => authorWord.includes(word)))) {
+              score = 90;
+            }
+            // Check if author name starts with query
+            else if (normalizedAuthor.startsWith(normalizedQuery)) {
+              score = 85;
+            }
+            // Check if query words match author words (partial matches)
+            else if (queryWords.some(word => authorWords.some(authorWord => authorWord.includes(word)))) {
+              const matchRatio = queryWords.filter(word => 
+                authorWords.some(authorWord => authorWord.includes(word))
+              ).length / queryWords.length;
+              score = matchRatio * 70;
+            }
           } else {
             // For title searches, score by title relevance
             const titleLower = book.title.toLowerCase();
@@ -106,13 +117,9 @@ export class GutenbergService {
             }
           }
           
-          // For author searches, only include books where author name matches
+          // For author searches, only include books with score > 0
           // For title searches, include any book with score > 0
-          const shouldInclude = searchByAuthor ? (score > 0 && book.authors.some(author => 
-            author.name.toLowerCase().includes(queryLower)
-          )) : score > 0;
-          
-          if (shouldInclude) {
+          if (score > 0) {
             rankedBooks.push({
               book: {
                 id: book.id,
