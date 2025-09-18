@@ -1,0 +1,258 @@
+-- Supabase Auth Schema Export
+-- Project ID: jnttwzuqutvsfrhpnwrz
+-- Generated: 2025-01-18
+-- NOTE: This is a READ-ONLY schema managed by Supabase. Do not modify directly.
+
+-- ================================
+-- AUTH SCHEMA TABLES
+-- ================================
+
+-- ================================
+-- USERS TABLE (Main authentication table)
+-- ================================
+-- Structure of auth.users table
+-- Columns:
+-- instance_id (uuid, nullable)
+-- id (uuid, not null, primary key)
+-- aud (varchar, nullable) - Audience claim
+-- role (varchar, nullable) - User role
+-- email (varchar, nullable)
+-- encrypted_password (varchar, nullable)
+-- email_confirmed_at (timestamp with time zone, nullable)
+-- invited_at (timestamp with time zone, nullable)
+-- confirmation_token (varchar, nullable)
+-- confirmation_sent_at (timestamp with time zone, nullable)
+-- recovery_token (varchar, nullable)
+-- recovery_sent_at (timestamp with time zone, nullable)
+-- email_change_token_new (varchar, nullable)
+-- email_change (varchar, nullable)
+-- email_change_sent_at (timestamp with time zone, nullable)
+-- last_sign_in_at (timestamp with time zone, nullable)
+-- raw_app_meta_data (jsonb, nullable) - Application metadata
+-- raw_user_meta_data (jsonb, nullable) - User metadata (signup data)
+-- is_super_admin (boolean, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- phone (text, nullable)
+-- phone_confirmed_at (timestamp with time zone, nullable)
+-- phone_change (text, nullable, default: '')
+-- phone_change_token (varchar, nullable, default: '')
+-- phone_change_sent_at (timestamp with time zone, nullable)
+-- confirmed_at (timestamp with time zone, nullable)
+-- email_change_token_current (varchar, nullable, default: '')
+-- email_change_confirm_status (smallint, nullable, default: 0)
+-- banned_until (timestamp with time zone, nullable)
+-- reauthentication_token (varchar, nullable, default: '')
+-- reauthentication_sent_at (timestamp with time zone, nullable)
+-- is_sso_user (boolean, not null, default: false)
+-- deleted_at (timestamp with time zone, nullable)
+-- is_anonymous (boolean, not null, default: false)
+
+-- ================================
+-- SESSIONS TABLE
+-- ================================
+-- Structure of auth.sessions table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- user_id (uuid, not null, references auth.users)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- factor_id (uuid, nullable) - MFA factor reference
+-- aal (user-defined type, nullable) - Authentication Assurance Level
+-- not_after (timestamp with time zone, nullable) - Session expiry
+-- refreshed_at (timestamp without time zone, nullable)
+-- user_agent (text, nullable)
+-- ip (inet, nullable)
+-- tag (text, nullable)
+
+-- ================================
+-- IDENTITIES TABLE (OAuth providers)
+-- ================================
+-- Structure of auth.identities table
+-- Columns:
+-- provider_id (text, not null)
+-- user_id (uuid, not null, references auth.users)
+-- identity_data (jsonb, not null) - Provider-specific user data
+-- provider (text, not null) - Provider name (email, google, github, etc.)
+-- last_sign_in_at (timestamp with time zone, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- email (text, nullable)
+-- id (uuid, not null, primary key, default: gen_random_uuid())
+
+-- ================================
+-- REFRESH_TOKENS TABLE
+-- ================================
+-- Structure of auth.refresh_tokens table
+-- Columns:
+-- instance_id (uuid, nullable)
+-- id (bigserial, not null, primary key)
+-- token (varchar, nullable, unique)
+-- user_id (varchar, nullable)
+-- revoked (boolean, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- parent (varchar, nullable)
+-- session_id (uuid, nullable, references auth.sessions)
+
+-- ================================
+-- MFA TABLES
+-- ================================
+
+-- MFA_FACTORS TABLE
+-- Structure of auth.mfa_factors table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- user_id (uuid, not null, references auth.users)
+-- friendly_name (text, nullable)
+-- factor_type (user-defined type, not null)
+-- status (user-defined type, not null)
+-- created_at (timestamp with time zone, not null)
+-- updated_at (timestamp with time zone, not null)
+-- secret (text, nullable)
+-- phone (text, nullable)
+-- last_challenged_at (timestamp with time zone, nullable)
+-- web_authn_credential (jsonb, nullable)
+-- web_authn_aaguid (uuid, nullable)
+
+-- MFA_CHALLENGES TABLE
+-- Structure of auth.mfa_challenges table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- factor_id (uuid, not null, references auth.mfa_factors)
+-- created_at (timestamp with time zone, not null)
+-- verified_at (timestamp with time zone, nullable)
+-- ip_address (inet, not null)
+-- otp_code (text, nullable)
+-- web_authn_session_data (jsonb, nullable)
+
+-- MFA_AMR_CLAIMS TABLE (Authentication Method References)
+-- Structure of auth.mfa_amr_claims table
+-- Columns:
+-- session_id (uuid, not null, references auth.sessions)
+-- created_at (timestamp with time zone, not null)
+-- updated_at (timestamp with time zone, not null)
+-- authentication_method (text, not null)
+-- id (uuid, not null, primary key)
+
+-- ================================
+-- ADDITIONAL TABLES
+-- ================================
+
+-- AUDIT_LOG_ENTRIES TABLE
+-- Structure of auth.audit_log_entries table
+-- Columns:
+-- instance_id (uuid, nullable)
+-- id (uuid, not null, primary key)
+-- payload (json, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- ip_address (varchar, not null, default: '')
+
+-- FLOW_STATE TABLE (OAuth flow management)
+-- Structure of auth.flow_state table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- user_id (uuid, nullable)
+-- auth_code (text, not null)
+-- code_challenge_method (user-defined type, not null)
+-- code_challenge (text, not null)
+-- provider_type (text, not null)
+-- provider_access_token (text, nullable)
+-- provider_refresh_token (text, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- authentication_method (text, not null)
+-- auth_code_issued_at (timestamp with time zone, nullable)
+
+-- INSTANCES TABLE
+-- Structure of auth.instances table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- uuid (uuid, nullable)
+-- raw_base_config (text, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+
+-- ONE_TIME_TOKENS TABLE
+-- Structure of auth.one_time_tokens table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- user_id (uuid, not null, references auth.users)
+-- token_type (user-defined type, not null)
+-- token_hash (text, not null)
+-- relates_to (text, not null)
+-- created_at (timestamp with time zone, not null, default: now())
+-- updated_at (timestamp with time zone, not null, default: now())
+
+-- OAUTH_CLIENTS TABLE
+-- Structure of auth.oauth_clients table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- name (text, not null)
+-- secret (text, not null)
+-- redirect_uris (text[], not null)
+-- response_types (text[], not null)
+-- grant_types (text[], not null)
+-- scope (text, not null)
+-- created_at (timestamp with time zone, not null)
+-- updated_at (timestamp with time zone, not null)
+
+-- SAML_PROVIDERS TABLE
+-- Structure of auth.saml_providers table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- sso_provider_id (uuid, not null, references auth.sso_providers)
+-- entity_id (text, not null, unique)
+-- metadata_xml (text, not null)
+-- metadata_url (text, nullable)
+-- attribute_mapping (jsonb, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- name_id_format (text, nullable)
+
+-- SAML_RELAY_STATES TABLE
+-- Structure of auth.saml_relay_states table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- sso_provider_id (uuid, not null, references auth.sso_providers)
+-- request_id (text, not null)
+-- for_email (text, nullable)
+-- redirect_to (text, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+-- flow_state_id (uuid, nullable, references auth.flow_state)
+
+-- SCHEMA_MIGRATIONS TABLE
+-- Structure of auth.schema_migrations table
+-- Columns:
+-- version (varchar, not null, primary key)
+
+-- SSO_DOMAINS TABLE
+-- Structure of auth.sso_domains table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- sso_provider_id (uuid, not null, references auth.sso_providers)
+-- domain (text, not null)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+
+-- SSO_PROVIDERS TABLE
+-- Structure of auth.sso_providers table
+-- Columns:
+-- id (uuid, not null, primary key)
+-- resource_id (text, nullable)
+-- created_at (timestamp with time zone, nullable)
+-- updated_at (timestamp with time zone, nullable)
+
+-- ================================
+-- NOTES
+-- ================================
+-- This auth schema is managed by Supabase and includes:
+-- 1. Core authentication tables (users, sessions, identities)
+-- 2. Multi-factor authentication support
+-- 3. OAuth/SAML SSO providers
+-- 4. Audit logging and flow state management
+-- 5. Token management and refresh mechanisms
+-- 
+-- IMPORTANT: Do not modify this schema directly as it's managed by Supabase.
+-- Use Supabase Auth API and dashboard for configuration changes.
