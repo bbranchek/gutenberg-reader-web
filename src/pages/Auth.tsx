@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen } from 'lucide-react';
+import openBookImage from '@/assets/open-book.png';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +57,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <BookOpen className="h-12 w-12 text-primary" />
+            <img src={openBookImage} alt="Open book" className="h-12 w-12" />
           </div>
           <h1 className="text-3xl font-bold">Gutenberg Reader</h1>
           <p className="text-muted-foreground">Access thousands of free books</p>
