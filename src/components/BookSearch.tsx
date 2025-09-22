@@ -49,19 +49,9 @@ export const BookSearch = ({ onBookSelect }: BookSearchProps) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center mb-4">
-          <Book className="h-8 w-8 text-accent mr-3" />
-          <h1 className="text-4xl font-serif font-bold bg-gradient-hero bg-clip-text text-transparent">
-            Gutenberg Reader
-          </h1>
-        </div>
-        <div className="flex justify-center mb-4">
-          <img 
-            src={openBookImage} 
-            alt="Open book illustration" 
-            className="w-20 h-15 object-contain opacity-80"
-          />
-        </div>
+        <h1 className="text-4xl font-serif font-bold bg-gradient-hero bg-clip-text text-transparent mb-4">
+          Gutenberg Reader
+        </h1>
         <p className="text-muted-foreground text-lg">
           Discover and read classic literature from Project Gutenberg
         </p>

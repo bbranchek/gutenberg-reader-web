@@ -56,10 +56,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <img src={openBookImage} alt="Open book" className="h-12 w-12" />
-          </div>
-          <h1 className="text-3xl font-bold">Gutenberg Reader</h1>
+          <h1 className="text-3xl font-bold mb-4">Gutenberg Reader</h1>
           <p className="text-muted-foreground">Access thousands of free books</p>
         </div>
 
