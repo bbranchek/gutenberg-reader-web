@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { GutenbergService, Book as BookType } from '@/services/gutenberg';
 import { BookCard } from './BookCard';
-import openBookImage from '@/assets/open-book.png';
+import openBookImage from '@/assets/open-book-hero.jpg';
 
 interface BookSearchProps {
   onBookSelect: (book: BookType) => void;
